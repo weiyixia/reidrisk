@@ -9,6 +9,76 @@ import pandas as pd
 import numpy as np
 import csv
 
+def generate_all_binary_string(n):
+    """
+    Given a positive integer number N. The task is to generate all the binary strings of N bits.
+    These binary strings should be in ascending order.
+    :param n:
+    :return an array:
+    """
+    rows_count = 2**n
+    cols_count = n
+    binary_array = np.zeros((rows_count, cols_count))
+    for i in range(rows_count):
+        for j in range(cols_count):
+            if (i//(2**j))%2 == 1:
+                binary_array[i][j] = 1
+    return binary_array
+
+def joined_prob(fields_list, prob_list, all_fields):
+    """
+    :param fields_list: a list of fields, ['race', 'gender, age'], an item
+    in the list can contain multiple fields
+    :param prob_list: a list of probabilities
+    :param all_fields: a list of all fields
+    :return: a list of joined probabilities, each probability is the joined probability
+    that of each combinations of the fields in fields_list
+    """
+
+    """
+    create a binary matrix to represent all the combinations of the fields
+    each row in the array is a combination of the fields
+    if the value is 0, the corresponding field is not in the combination
+    if the value is 1, the corresponding field is in the combination
+    """
+    cols_count = len(fields_list)
+    fields_array = generate_all_binary_string(cols_count)
+    fields_array_invert = 1 - fields_array
+    prob_vector = np.array(prob_list)
+    """
+    the joined probability is the product of the probability that each in_group field is in the group
+    and the probability that each out_group field is not in the group
+    """
+    prob_array =  fields_array*prob_vector + fields_array_invert* (1-_prob_vector)
+    joined_prob_list = np.prod(prob_array, axis = 1)
+
+    field_index = {}
+    for i in range(len(fields_list)):
+        curr = list(fields_list[i].split(','))
+        for item in curr:
+            field_index[item] = i
+
+    #map the fields_array to all_fields_array
+    all_fields_array = np.zeros((fields_array.shape[0], len(all_fields)))
+    #iterate through each column in all_fields_array
+    for i in range(len(all_fields)):
+        #get the index of the current field in fields_list
+        field_index = field_index.get(all_fields[i], -1)
+        #if the current field is in fields_list, get the corresponding column in fields_array
+        if field_index != -1:
+            all_fields_array[:,i] = fields_array[:,field_index]
+
+    return joined_prob_list
+
+
+
+
+
+
+
+
+
+
 class Attacker:
     def __init__(self, name, condition_fields, fields, probability_file):
         """
@@ -134,7 +204,7 @@ def __get_joined_prob(field_map_table, single_field_prob_list):
     #convert the dataframe to numpy array
     fields_array = np.array(fields_df)
 
-    fields_array_reverse =np.full(fields_df.shape, 1) - fields_array
+    fields_array_invert = 1 - fields_array
 
 
     field_in_group_prob_list_vector = np.array(single_field_prob_list)

@@ -13,4 +13,7 @@ def attacker(name, condition_fields, fields, probability_file):
 
 
 def twitter_attacker():
-    return attacker("Twitter", ""
+    return Attacker()
+
+def voter_attacker():
+    return Attacker()

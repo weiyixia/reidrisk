@@ -6,7 +6,7 @@ This module contains the functions to creating the probabilistic attacker model 
 
 """
 
-from attacker import Attacker
+from .attacker import Attacker
 
 def attacker(probability_file, model, name):
     return Attacker(probability_file, model, name)

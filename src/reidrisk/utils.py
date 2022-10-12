@@ -2,7 +2,7 @@
 author: Weiyi Xia
 last modified: October 9, 2022
 """
-
+import numpy as np
 def generate_all_binary_string(n):
     """
     Given a positive integer number N. The task is to generate all the binary strings of N bits.

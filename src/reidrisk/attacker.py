@@ -138,7 +138,7 @@ class ProbModel:
 
 
 class Attacker:
-    def __init__(self, probability_file, name=None, condition_fields=None, fields=None):
+    def __init__(self, probability_file, model: dict[Hashable, ProbModel] =None, name = ''):
         """
         :param name: the name of the attacker
         :param condition_fields: the list of field names that the probabilities are conditioned on
@@ -154,17 +154,16 @@ class Attacker:
         then the probability file is invalid.
         """
         self.name = name
-        self.condition_fields = condition_fields
-        self.fields = fields
         self.probability_file = probability_file
-        self._check_probability_file()
-        if self.condition_fields is None:
-            self.condition_fields = self._get_condition_fields()
-        self.model = None
-        self.set_attacker_model()
+        self._check_columns()
+        self.condition_fields = self._get_condition_fields()
+        self._check_known_fields()
+        self.model = model
+        if self.model is None:
+            self._set_attacker_model()
 
 
-    def _check_probability_file(self):
+    def _check_columns(self):
          """
         self.probability_file: the file that contains the conditional probabliities
         each condition_fields corresponds to a column in the file
@@ -183,76 +182,101 @@ class Attacker:
         then the probability file is invalid.
         """
         #check if the column names are valid
+        if self.probability_file is not None:
+            with open(self.probability_file, 'r') as f:
+                reader = csv.reader(f)
+                column_names = next(reader)
+                if len(column_names) > len(set(column_names)):
+                    raise ValueError('The column names are not unique')
+                if 'known_fields' not in column_names or 'probability' not in column_names:
+                    raise ValueError('the probability file should have two columns: known_fields and probability')
 
-        with open(self.probability_file, 'r') as f:
-            reader = csv.reader(f)
-            column_names = next(reader)
-            if len(column_names) > len(set(column_names)):
-                raise ValueError('The column names are not unique')
-            if 'known_fields' not in column_names or 'probability' not in column_names:
-                raise ValueError('the probability file should have two columns: known_fields and probability')
-            if self.condition_fields!=None:
-                if set(column_names) != set(self.condition_fields + ['known_fields', 'probability']):
-                    raise ValueError('The column names in the probability file are invalid.')
-
-        #check if the comma seperated field in each row in the known_fields are in the self.fields
-        if self.fields!=None:
+    def _check_known_fields(self):
+        if self.probability_file is not None:
             df = pd.read_csv(self.probability_file)
-            for row in df.iterrows():
-                known_fields = row[1]['known_fields'].split(',')
-                if set(known_fields) - set(self.fields):
-                    raise ValueError('ERROR in row' + str(row) + ': The field in known_fields should be in the self.fields.')
+            #group df by the condition_fields and check each group
+            if len(self.condition_fields)>0:
+                for name, group in df.groupby(self.condition_fields):
+                    known_fields_list = group['known_fields'].tolist()
+                    known_fields_set = set()
+                    #check if the values in the known_fields are valid
+                    for i in known_fields_list:
+                        known_fields = set(i.split(','))
+                        #check if known_fields is in the known_fields_set
+                        if known_fields in known_fields_set:
+                            raise ValueError('ERROR in group' + str(name) + ': The values in the known_fields in all the rows with the same values in the condition_fields should not overlap.')
+            else:
+                known_fields_list = df['known_fields'].tolist()
+                known_fields_set = set()
+                #check if the values in the known_fields are valid
+                for i in known_fields_list:
+                    known_fields = set(i.split(','))
+                    #check if known_fields is in the known_fields_set
+                    if known_fields in known_fields_set:
+                        raise ValueError('ERROR in group' + str(name) + ': The values in the known_fields in all the rows with the same values in the condition_fields should not overlap.')
 
-        df = pd.read_csv(self.probability_file)
-        #group df by the condition_fields and check each group
-        for name, group in df.groupby(self.condition_fields):
-            known_fields_list = group['known_fields'].tolist()
-            known_fields_set = set()
-            #check if the values in the known_fields are valid
-            for i in known_fields_list:
-                known_fields = set(i.split(','))
-                #check if known_fields is in the known_fields_set
-                if known_fields in known_fields_set:
-                    raise ValueError('ERROR in group' + str(name) + ': The values in the known_fields in all the rows with the same values in the condition_fields should not overlap.')
     def _get_condition_fields(self):
-        with open(self.probability_file, 'r') as f:
-            reader = csv.reader(f)
-            column_names = next(reader)
-            column_names.remove('known_fields')
-            column_names.remove('probability')
-            return column_names
-    def set_attacker_model(self):
+        if self.probability_file is not None:
+            with open(self.probability_file, 'r') as f:
+                reader = csv.reader(f)
+                column_names = next(reader)
+                column_names.remove('known_fields')
+                column_names.remove('probability')
+                return column_names
+        else:
+            return []
+
+    def _set_attacker_model(self):
         """
         return a dictionary, the keys are tuples of values of the condition_fields
         and the values are ProbModel objects
         """
-        self._check_probability_file()
-        df = pd.read_csv(self.probability_file)
-        #group df by the condition_fields and check each group
-        attacker_model: dict[Hashable, ProbModel] = {}
-        for name, group in df.groupby(self.condition_fields):
-            known_fields_list = group['known_fields'].tolist()
-            prob_list = group['probability'].tolist()
-            attacker_model[name] = joined_prob(known_fields_list, prob_list)
-        self.model = attacker_model
+        if self.probability_file is not None:
+            df = pd.read_csv(self.probability_file)
+            #group df by the condition_fields and check each group
+            attacker_model: dict[Hashable, ProbModel] = {}
+            if len(self.condition_fields) == 0:
+                known_fields_list = df['known_fields'].tolist()
+                prob_list = df['probability'].tolist()
+                attacker_model = joined_prob(known_fields_list, prob_list)
+            else:
+                for name, group in df.groupby(self.condition_fields):
+                    known_fields_list = group['known_fields'].tolist()
+                    prob_list = group['probability'].tolist()
+                    attacker_model[name] = joined_prob(known_fields_list, prob_list)
+            self.model = attacker_model
 
     @staticmethod
     def add_two_attacker_model(model1: Attacker, model2: Attacker):
-
-        name = model1.name + ' plus ' + model2.name
-        condition_fields = model1.condition_fields + model2.condition_fields
-        fields = list(set(model1.fields + model2.fields))
-        probability_file = None
-
-        model_sum = {}
         m1 = model1.model
         m2 = model2.model
 
-        for key1, value1 in m1.items():
-            for key2, value2 in m2.items():
-                combined_key =tuple( [key1, key2])
-                model_sum[combined_key] = value1 + value2
-        return Attacker(name, condition_fields, fields, probability_file, model_sum)
+        if m1 is None:
+            return model2
+
+        if m2 is None:
+            return model1
+
+        name = model1.name + ' plus ' + model2.name
+        condition_fields = model1.condition_fields + model2.condition_fields
+
+        model_sum = {}
+        if len(model1.condition_fields) ==0:
+            if len(model2.condition_fields) ==0:
+                model_sum = joined_prob(m1, m2)
+            else:
+                for name2, group2 in m2.items():
+                    model_sum[name2] = joined_prob(m1, group2)
+        else:
+            if len(model2.condition_fields) ==0:
+                for name1, group1 in m1.items():
+                    model_sum[name1] = joined_prob(group1, m2)
+            else:
+                for name1, group1 in m1.items():
+                    for name2, group2 in m2.items():
+                        if name1 == name2:
+                            model_sum[tuple([name1, name2])] = joined_prob(group1, group2)
+        return Attacker(None, model_sum, None)
     def __add__(self, other: Attacker):
         add_two_attacker_model(self, other)
 

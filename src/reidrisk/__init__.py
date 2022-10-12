@@ -8,12 +8,7 @@ This module contains the functions to creating the probabilistic attacker model 
 
 from attacker import Attacker
 
-def attacker(name, condition_fields, fields, probability_file):
-    return Attacker(name, condition_fields, fields, probability_file)
+def attacker(probability_file, model, name):
+    return Attacker(probability_file, model, name)
 
 
-def twitter_attacker():
-    return Attacker()
-
-def voter_attacker():
-    return Attacker()

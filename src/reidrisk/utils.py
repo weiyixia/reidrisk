@@ -17,4 +17,4 @@ def generate_all_binary_string(n):
         for j in range(cols_count):
             if (i//(2**j))%2 == 1:
                 binary_array[i][j] = 1
-    return binary_array
+    return binary_array.astype(int)

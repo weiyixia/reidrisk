@@ -3,6 +3,7 @@ author: Weiyi Xia
 last modified: October 9, 2022
 """
 import numpy as np
+import pandas as pd
 def generate_all_binary_string(n):
     """
     Given a positive integer number N. The task is to generate all the binary strings of N bits.
@@ -20,7 +21,7 @@ def generate_all_binary_string(n):
     return binary_array.astype(int)
 
 class MissingPatterns:
-    def __init__(self, patterns):
+    def __init__(self, patterns: np.ndarray):
         self.patterns = patterns.astype(int)
         self._check_values_in_patterns() #check if the values in the patterns are 0 or 1
         self.unique_patterns = np.unique(self.patterns, axis=0)
@@ -82,18 +83,39 @@ class MissingPatterns:
             s += 'parent node: '+str(key) + '\n children nodes: ' + str(value) + '\n'
         return s
 
+    def get_offsprings(self, node):
+        if self.tree.get(node, None) is None:
+            raise ValueError("The node does not exist")
+        else:
+            offsrpings = []
+            #breadth first search
+            #offsprings is all the nodes in the subtree of node except the node itself
 
+            queue = [node]
+            while len(queue) > 0:
+                curr_node = queue.pop(0)
+                offsrpings.append(curr_node)
+                if len(self.tree[curr_node]) > 0:
+                    queue += self.tree[curr_node]
+            offsrpings.remove(node)
+            return offsrpings
 
-#def get_missing_pattern_group(df):
-#    df = df.replace(r'^\s+$', np.nan, regex=True)
-#    df = df.replace('', np.nan)
-#    is_null = df.isnull()
-#    #merge df and is_null by column
-#
-#    return str(tree)
+class DataFrameWithMissingValues:
+    def __init__(self, df: pd.DataFrame, null_values):
+        self.missing_values = null_values
+        self.df = df
+        self._replace_missing_with_nan()
+        self.missing_patterns = self._get_missing_patterns()
 
+    def _replace_missing_with_nan(self):
+        for i in range(self.df.shape[0]):
+            for j in range(self.df.shape[1]):
+                if self.df.iloc[i,j] in self.missing_values or str(self.df.iloc[i,j]).strip()== '':
+                    self.df.iloc[i,j] = np.nan
 
+    def _get_missing_patterns(self):
+        return MissingPatterns(np.array(pd.notnull(self.df)).astype(int))
 
-
-
+    def get_equivalent_group_size(self):
+        pass
 

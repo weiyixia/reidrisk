@@ -25,12 +25,19 @@ class MissingPatterns:
         self.patterns = patterns.astype(int)
         self._check_values_in_patterns() #check if the values in the patterns are 0 or 1
         self.unique_patterns = np.unique(self.patterns, axis=0)
-        self.tree = self.get_pattern_tree()
+        self._tree = self._get_pattern_tree()
+        self.linked_patterns = {}
+        #iterate through the each row in unique_patterns by index
+        #for each row, get the offsprings
+        #use the row index as key, offsprings as value
+        for i in range(self.unique_patterns.shape[0]):
+            self.linked_patterns[i] = self._get_offsprings(i)
+        self.pattern_groups = self._get_pattern_groups()
 
     def _check_values_in_patterns(self):
         if np.max(self.patterns) > 1 or np.min(self.patterns) < 0:
             raise ValueError("The values in the patterns should be 0 or 1")
-    def get_pattern_tree(self):
+    def _get_pattern_tree(self):
         u_p = self.unique_patterns
         levels = {}
         #every row in u_p is a binary vector
@@ -79,12 +86,12 @@ class MissingPatterns:
         s = 'unique patterns: \n'
         for i, v in enumerate(self.unique_patterns):
             s += str(i) + ': ' + str(v) + '\n'
-        for key, value in self.tree.items():
+        for key, value in self._tree.items():
             s += 'parent node: '+str(key) + '\n children nodes: ' + str(value) + '\n'
         return s
 
-    def get_offsprings(self, node):
-        if self.tree.get(node, None) is None:
+    def _get_offsprings(self, node):
+        if self._tree.get(node, None) is None:
             raise ValueError("The node does not exist")
         else:
             offsrpings = []
@@ -95,10 +102,32 @@ class MissingPatterns:
             while len(queue) > 0:
                 curr_node = queue.pop(0)
                 offsrpings.append(curr_node)
-                if len(self.tree[curr_node]) > 0:
-                    queue += self.tree[curr_node]
+                if len(self._tree[curr_node]) > 0:
+                    queue += self._tree[curr_node]
             offsrpings.remove(node)
-            return offsrpings
+            return list(set(offsrpings))
+
+    def _get_index_of_unique_pattern(self):
+        unique_pattern_dict = {}
+        for i in range(self.unique_patterns.shape[0]):
+            unique_pattern_dict[tuple(self.unique_patterns[i])] = i
+        return unique_pattern_dict
+    def _get_pattern_groups(self):
+        #iterate through each row in self.patterns by index
+        #for each row, convert it to a tuple, use the tuple as key to get the value from the dictionary
+        #append the row index to the value
+        #return the dictionary
+        unique_pattern_dict = self._get_index_of_unique_pattern()
+        pattern_groups = {}
+        for i in range(self.patterns.shape[0]):
+            pattern = tuple(self.patterns[i])
+            pattern_index = unique_pattern_dict[pattern]
+            if pattern_groups.get(pattern_index, None) is None:
+                pattern_groups[pattern_index] = [i]
+            else:
+                pattern_groups[pattern_index].append(i)
+        return pattern_groups
+
 
 class DataFrameWithMissingValues:
     def __init__(self, df: pd.DataFrame, null_values):

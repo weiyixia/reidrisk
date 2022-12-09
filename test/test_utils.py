@@ -76,4 +76,4 @@ class TestUtils(unittest.TestCase):
             [0,0,0]])
         mp = DataFrameWithMissingValues(pd.DataFrame(patterns), [0])
         counts = mp.get_equivalent_group_size()
-        self.assertEqual(counts, [2, 7, 3, 5, 3, 3, 3, 3, 2])
+        self.assertEqual(counts, [2, 7, 3, 5, 3, 3, 3, 4, 2])

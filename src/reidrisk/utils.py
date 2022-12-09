@@ -179,22 +179,24 @@ class DataFrameWithMissingValues:
         print ("groupby_dict")
         print (groupby_dict)
         for pattern_key, row_indexes in groups_by_missing.items():
+            print ("current pattern")
+            print ("pattern_key")
             if np.sum(u_p[pattern_key]) == 0:
                 for i in row_indexes:
                     group_size[i] = groupby_dict[pattern_key]
             else:
-                c_count = groupby_dict[pattern_key]
-                print ("c_count")
-                print (c_count)
-                print ("self.missing_patterns.linked_patterns")
-                print (self.missing_patterns.linked_patterns)
+                c_count_v = groupby_dict[pattern_key].copy()
+                print ("c_count_v")
+                print(c_count_v)
                 for offspring in self.missing_patterns.linked_patterns[pattern_key]:
+                    print ("offspring")
+                    print (offspring)
                     #get the columns that are 1 in u_p[item]
                     o_count = groupby_dict[offspring]
-                    #iterate through c_count by key and value
+                    #iterate through c_count_v by key and value
                     if np.sum(u_p[offspring]) == 0:
-                        for key, value in c_count.items():
-                            c_count[key] += o_count
+                        for key, value in c_count_v.items():
+                            c_count_v[key] += o_count
                     else:
                         c_cols = np.where(u_p[pattern_key] == 1)[0]
                         o_cols = np.where(u_p[offspring] == 1)[0]
@@ -202,13 +204,15 @@ class DataFrameWithMissingValues:
                         for col_index in range(len(c_cols)):
                             if c_cols[col_index] in o_cols:
                                 o_key_indexes.append(col_index)
-                        for key, value in c_count.items():
+                        for key, value in c_count_v.items():
                             #if key is in o_count
                             o_key = tuple([key[i_o_key] for i_o_key in o_key_indexes])
                             if o_key in o_count:
                                 #add the value of c_count[key] to o_count[key]
-                                c_count[key] += o_count[o_key]
+                                c_count_v[key] += o_count[o_key]
+                    print ("c_count_v")
+                    print(c_count_v)
                 for i in row_indexes:
-                    group_size[i] = c_count[tuple(self.df.iloc[i, u_p[pattern_key] == 1])]
+                    group_size[i] = c_count_v[tuple(self.df.iloc[i, u_p[pattern_key] == 1])]
         return group_size
 

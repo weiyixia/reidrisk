@@ -150,11 +150,7 @@ class DataFrameWithMissingValues:
 
     def get_equivalent_group_size(self):
         groups_by_missing = self.missing_patterns.pattern_groups
-        print ("groups_by_missing")
-        print (groups_by_missing)
         u_p = self.missing_patterns.unique_patterns
-        print ("unique missing patterns")
-        print (u_p)
         group_size = [0]*self.df.shape[0]
         #iterate through pattern_groups by key and value
         groupby_dict = {}
@@ -176,21 +172,13 @@ class DataFrameWithMissingValues:
                     groupby_dict[pattern_key] = c_count_tuple
                 else:
                     groupby_dict[pattern_key] = c_count
-        print ("groupby_dict")
-        print (groupby_dict)
         for pattern_key, row_indexes in groups_by_missing.items():
-            print ("current pattern")
-            print ("pattern_key")
             if np.sum(u_p[pattern_key]) == 0:
                 for i in row_indexes:
                     group_size[i] = groupby_dict[pattern_key]
             else:
                 c_count_v = groupby_dict[pattern_key].copy()
-                print ("c_count_v")
-                print(c_count_v)
                 for offspring in self.missing_patterns.linked_patterns[pattern_key]:
-                    print ("offspring")
-                    print (offspring)
                     #get the columns that are 1 in u_p[item]
                     o_count = groupby_dict[offspring]
                     #iterate through c_count_v by key and value
@@ -210,8 +198,6 @@ class DataFrameWithMissingValues:
                             if o_key in o_count:
                                 #add the value of c_count[key] to o_count[key]
                                 c_count_v[key] += o_count[o_key]
-                    print ("c_count_v")
-                    print(c_count_v)
                 for i in row_indexes:
                     group_size[i] = c_count_v[tuple(self.df.iloc[i, u_p[pattern_key] == 1])]
         return group_size

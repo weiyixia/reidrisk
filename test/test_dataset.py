@@ -11,3 +11,8 @@ class TestDataset(unittest.TestCase):
         )
         ds.load()
         self.assertEqual(ds.dset.shape[0], 372380)
+
+    def test_file(self):
+        ds = Dataset(source='file', dfile='data/syntheticdata.csv')
+        ds.load()
+        self.assertEqual(ds.dset.shape[0], 372380)

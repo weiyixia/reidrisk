@@ -21,11 +21,12 @@ class Dataset:
             bigquery_dataset=None,
             bigquery_table=None
     ):
+        self.dset = dset
         self.source = source
         self.dfile = dfile
         self.colnames = colnames
         self.header = header
-        self.index = index_col
+        self.index_col = index_col
         self.sep = sep
         self.bigquery_service_account_key_file = bigquery_service_account_key_file
         self.bigquery_dataset = bigquery_dataset
@@ -33,19 +34,20 @@ class Dataset:
 
     def load(self):
         if self.source == "dataframe":
-            self.dset = dset
-        if self.source == "file":
-            if dfile is None:
+            pass
+        elif self.source == 'file':
+            if self.dfile is None:
                 raise ValueError("dataset file is not specified")
             else:
-                if self.header is None:
-                    self.dset = pd.read_csv(self.dfile, sep=self.sep, header=self.header, index_col=self.index_col)
+                self.dset = pd.read_csv(self.dfile, sep=self.sep, header=self.header, index_col=self.index_col)
 
-        if self.source == "bigquery":
+        elif self.source == "bigquery":
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.bigquery_service_account_key_file
             client = bigquery.Client()
             query = "SELECT * FROM {}.{}".format(self.bigquery_dataset, self.bigquery_table)
             self.dset = client.query(query).to_dataframe()
+        else:
+            raise ValueError("dataset source is not specified")
 
 
 

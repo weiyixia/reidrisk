@@ -76,6 +76,13 @@ class ProbModel:
     def __add__(self, other):
         return add_two_prob_model(self, other)
 
+    def __str__(self):
+        df = pd.DataFrame(self.fields_array, columns=self.fields)
+        df['prob'] = self.prob_list
+        return df.to_string()
+
+    def to_string(self):
+        return self.__str__()
 
 def add_two_prob_model(model1: ProbModel, model2: ProbModel):
     """
@@ -83,6 +90,10 @@ def add_two_prob_model(model1: ProbModel, model2: ProbModel):
     :param model2: a ProbModel object
     :return: a ProbModel object that is the sum of model1 and model2
     """
+    if model1 is None:
+        return model2
+    if model2 is None:
+        return model1
     fields = list(set(model1.fields + model2.fields))
     cols_count = len(fields)
     fields_array1 = np.zeros((model1.fields_array.shape[0], cols_count)).astype(int)
@@ -135,7 +146,7 @@ def add_two_prob_model(model1: ProbModel, model2: ProbModel):
 
 
 class Attacker:
-    def __init__(self, probability_df, model: dict[Hashable, ProbModel] = None, name=''):
+    def __init__(self, probability_df, model: dict[Hashable, ProbModel] = None, name='',condition_fields=[]):
         """
         :param name: the name of the attacker
         :param condition_fields: the list of field names that the probabilities are conditioned on
@@ -153,7 +164,10 @@ class Attacker:
         self.name = name
         self.probability_df = probability_df
         self._check_columns()
-        self.condition_fields = self._get_condition_fields()
+        if condition_fields!=[]:
+            self.condition_fields=condition_fields
+        else:
+            self.condition_fields = self._get_condition_fields()
         self._check_known_fields()
         self.model = model
         if self.model is None:
@@ -200,7 +214,7 @@ class Attacker:
             column_names = list(self.probability_df.columns)
             column_names.remove('known_fields')
             column_names.remove('probability')
-            return column_names
+            return list(column_names)
         else:
             return []
 
@@ -221,11 +235,25 @@ class Attacker:
                 for name, group in df.groupby(self.condition_fields):
                     known_fields_list = group['known_fields'].tolist()
                     prob_list = group['probability'].tolist()
-                    attacker_model[name] = joined_prob(known_fields_list, prob_list)
+                    if type(name) is tuple:
+                        attacker_model[name] = joined_prob(known_fields_list, prob_list)
+                    else:
+                        attacker_model[tuple([name])] = joined_prob(known_fields_list, prob_list)
             self.model = attacker_model
 
     def __add__(self, other):
         return add_two_attacker_model(self, other)
+
+    def __str__(self):
+        l1 = "Attacjer name: " + self.name + "\n"
+        l2 = ''
+        for k, v in self.model.items():
+            for index, item in enumerate(self.condition_fields):
+                l2 += str(item) + ": " + str(k[index]) + ", "
+            l2 += "\n"
+            l2 += str(v)
+            l2 += "\n"
+        return l1 + l2
 
 
 def add_two_attacker_model(model1: Attacker, model2: Attacker):
@@ -256,4 +284,4 @@ def add_two_attacker_model(model1: Attacker, model2: Attacker):
             for name1, group1 in m1.items():
                 for name2, group2 in m2.items():
                     model_sum[tuple([name1, name2])] = group1 + group2
-    return Attacker(None, model_sum, None)
+    return Attacker(None, model_sum,'',[model1.condition_fields, model2.condition_fields])

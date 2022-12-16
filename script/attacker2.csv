@@ -1,0 +1,7 @@
+age,known_fields,probability
+18-24,"race,ethnicity",0.26
+18-24,"occupation",0.17
+18-24,"income",0.21
+50-64,"race,ethnicity",0.1
+50-64,"occupation",0.065
+50-64,"income",0.08

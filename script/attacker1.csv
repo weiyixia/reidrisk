@@ -1,0 +1,7 @@
+race,ethnicity,state,known_fields,probability
+white,hispanic,NC,"state,race,gender,age",0.69
+black,non-hispanic,NC,"state,race,gender,age",0.5
+white,hispanic,TN,"state,gender,age",0.6
+black,non-hispanic,TN,"state,gender,age",0.54
+
+

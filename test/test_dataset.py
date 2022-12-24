@@ -1,5 +1,7 @@
 import unittest
 from reidrisk.dataset import Dataset
+from reidrisk.attacker import Attacker
+import pandas as pd
 
 class TestDataset(unittest.TestCase):
     def test_bigquery(self):
@@ -13,6 +15,24 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(ds.dset.shape[0], 372380)
 
     def test_file(self):
-        ds = Dataset(source='file', dfile='data/syntheticdata.csv')
+        ds = Dataset(source='file', dfile='data/syntheticdata_anonymized.csv')
         ds.load()
         self.assertEqual(ds.dset.shape[0], 372380)
+
+    def test_get_attacker_known_fields(self):
+        ds = Dataset(source='file',
+                     dfile='data/syntheticdata_anonymized.csv',
+                     attacker_known_fields_map={'state': None, 'race':'race','gender':'gender','age':None})
+        ds.load()
+        attack1_df = pd.read_csv('script/attacker1.csv', header=0, index_col=None, sep=',')
+        attacker1 = Attacker(attack1_df)
+        probmodel = attacker1.model[('white','hispanic','NC')]
+        fields = probmodel.fields
+        fields_array_row = probmodel.fields_array[0]
+        attacker_known_fields = ds.get_attacker_known_fields(fields, fields_array_row)
+        self.assertEqual(attacker_known_fields, [])
+        fields_array_row = probmodel.fields_array[1]
+        attacker_known_fields = ds.get_attacker_known_fields(fields, fields_array_row)
+        self.assertEqual(attacker_known_fields, ['race','gender'])
+
+

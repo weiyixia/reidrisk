@@ -20,8 +20,8 @@ class Dataset:
             bigquery_service_account_key_file=None,
             bigquery_dataset=None,
             bigquery_table=None,
-            attacker_known_fields_map = {},
-            attacker_condition_fields_map = {},
+            attacker_known_fields_map = [],
+            attacker_condition_fields_map = [],
             attacker_condition_fields_values_map = {}
     ):
         self.dset = dset
@@ -34,7 +34,7 @@ class Dataset:
         self.bigquery_service_account_key_file = bigquery_service_account_key_file
         self.bigquery_dataset = bigquery_dataset
         self.bigquery_table = bigquery_table
-        self.attacker_known_fields_map = attacker_known_fields_map
+        self.attacker_known_fields_map = self.set_attacker_known_fields_map(attacker_known_fields_map)
         self.attacker_condition_fields_map = attacker_condition_fields_map
         self.attacker_condition_fields_values_map = attacker_condition_fields_values_map
 
@@ -61,6 +61,27 @@ class Dataset:
         else:
             raise ValueError("dataset source is not specified")
 
+    def set_attacker_known_fields_map(self,a_k_f_map):
+        '''
+        a_k_f_map: a list of dictionary of known fields for each attacker
+        this function checks if the dictionaries are consistent
+        i.e., the same fields in different dictionaries are mapped to the same field in the dataset
+        for example, if attacker 1 knows race, and attacker 2 also knows race,
+        the two race needs to to mapped to the same field in the dataset
+        the function returns the combined dictionary of the known fields from all the attackers
+        '''
+        a_k_f_map_combined = {}
+        if a_k_f_map is None or len(a_k_f_map)==0:
+            raise ValueError("attacker known fields map is not specified")
+        else:
+            for item in a_k_f_map:
+                for k,v in item.items():
+                    if k in a_k_f_map_combined:
+                        if a_k_f_map_combined[k] != v:
+                            raise ValueError("attacker known fields map is not consistent")
+                    else:
+                        a_k_f_map_combined[k] = v
+        return a_k_f_map_combined
 
     def get_attacker_known_fields(self, all_fields_from_attacker_model, fields_array_row_from_attacker_model):
         '''
@@ -79,11 +100,53 @@ class Dataset:
                     attacker_known_fields.append(field_in_dataset)
         return attacker_known_fields
 
+    def get_attacker_condition_fields(self, attacker_condition_fields: [])
+        '''
+        this function first check if the condition_fields are in the dataset
+        :param attacker_condition_fields_map: 
+        :return: 
+        '''
+        if len(attacker_condition_fields_map)==0:
+            return []
+        else:
+            attacker_condition_fields_in_dataset = []
+            for item in attacker_condition_fields:
+                if type(item) is str:
+                    curr_field = self.attacker_condition_fields_map.get(item,None)
+                    if curr_field is None:
+                        raise ValueError("attacker condition field {} is not in the attacker_condition_fields_map".format(item))
+                    elif curr_field not in self.dset.columns:
+                        raise ValueError("attacker condition field {} is not in the dataset".format(item))
+                    else:
+                        attacker_condition_fields_in_dataset.append(curr_field)
+                else:
+                    curr_field_list = []
+                    for item_in_item in item:
+                        curr_field = self.attacker_condition_fields_map.get(item_in_item,None)
+                        if curr_field is None:
+                            raise ValueError("attacker condition field {} is not in the attacker_condition_fields_map".format(item_in_item))
+                        elif curr_field not in self.dset.columns:
+                            raise ValueError("attacker condition field {} is not in the dataset".format(item_in_item))
+                        else:
+                            curr_field_list.append(curr_field)
+                    attacker_condition_fields_in_dataset.append(curr_field_list)
+            return attacker_condition_fields_in_dataset
+
+                if item == {}:
+                    continue
+                else:
+                    for k,v in item.items():
+                        if v not in self.dset.columns:
+                            raise ValueError("attacker condition fields map is not consistent with the dataset")
     def get_matching_prob_model(self, df_row, attacker_condition,attacker_condition_fields) :
         '''
         df_row is a row in the dataset
         attacker_condition is a row in the attacker model
         attacker_condition_fields is a row in the attacker model
+        :param df_row:
+        :param attacker_condition:
+        :param attacker_condition_fields:
+        :return:
         '''
         for i in range(len(attacker_condition)):
             if attacker_condition[i] == 1:
@@ -91,11 +154,6 @@ class Dataset:
                 if df_row[field] != self.attacker_condition_fields_values_map.get(field,None):
                     return False
         return True
-        :param df_row:
-        :param attacker_condition:
-        :param attacker_condition_fields:
-        :return:
-        '''
 
 
 

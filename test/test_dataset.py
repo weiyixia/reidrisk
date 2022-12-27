@@ -19,10 +19,16 @@ class TestDataset(unittest.TestCase):
         ds.load()
         self.assertEqual(ds.dset.shape[0], 372380)
 
+    def test_set_attacker_known_fields_map(self):
+        ds = Dataset(source='file',
+                     dfile='data/syntheticdata_anonymized.csv',
+                     attacker_known_fields_map=[{'race':'race','gender':'gender'},{'race':'race','income':'income'}]
+                     )
+        self.assertEqual(ds.attacker_known_fields_map,{'race':'race','gender':'gender','income':'income'})
     def test_get_attacker_known_fields(self):
         ds = Dataset(source='file',
                      dfile='data/syntheticdata_anonymized.csv',
-                     attacker_known_fields_map={'state': None, 'race':'race','gender':'gender','age':None})
+                     attacker_known_fields_map=[{'race':'race','gender':'gender'}])
         ds.load()
         attack1_df = pd.read_csv('script/attacker1.csv', header=0, index_col=None, sep=',')
         attacker1 = Attacker(attack1_df)
@@ -34,5 +40,4 @@ class TestDataset(unittest.TestCase):
         fields_array_row = probmodel.fields_array[1]
         attacker_known_fields = ds.get_attacker_known_fields(fields, fields_array_row)
         self.assertEqual(attacker_known_fields, ['race','gender'])
-
 

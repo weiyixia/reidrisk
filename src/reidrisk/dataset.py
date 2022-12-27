@@ -103,6 +103,11 @@ class Dataset:
     def get_attacker_condition_fields(self, attacker_condition_fields: []):
         '''
         this function first check if the condition_fields are in the dataset
+        all the condition fields need to be mapped to a field in the dataset
+        if there is only one attacker model, the attacker condition fields is
+        a list of strings
+        if the attacker is a combination of two attackers
+        the attacker condition fields is a list of two lists of strings
         :param attacker_condition_fields_map: 
         :return: 
         '''

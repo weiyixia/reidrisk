@@ -100,7 +100,7 @@ class Dataset:
                     attacker_known_fields.append(field_in_dataset)
         return attacker_known_fields
 
-    def get_attacker_condition_fields(self, attacker_condition_fields: [])
+    def get_attacker_condition_fields(self, attacker_condition_fields: []):
         '''
         this function first check if the condition_fields are in the dataset
         :param attacker_condition_fields_map: 

@@ -132,12 +132,6 @@ class Dataset:
                     attacker_condition_fields_in_dataset.append(curr_field_list)
             return attacker_condition_fields_in_dataset
 
-                if item == {}:
-                    continue
-                else:
-                    for k,v in item.items():
-                        if v not in self.dset.columns:
-                            raise ValueError("attacker condition fields map is not consistent with the dataset")
     def get_matching_prob_model(self, df_row, attacker_condition,attacker_condition_fields) :
         '''
         df_row is a row in the dataset

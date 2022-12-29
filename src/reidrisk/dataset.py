@@ -55,22 +55,3 @@ class Dataset:
         else:
             raise ValueError("dataset source is not specified")
 
-        df_row is a row in the dataset
-        attacker_condition is a row in the attacker model
-        attacker_condition_fields is a row in the attacker model
-        :param df_row:
-        :param attacker_condition:
-        :param attacker_condition_fields:
-        :return:
-        '''
-        for i in range(len(attacker_condition)):
-            if attacker_condition[i] == 1:
-                field = attacker_condition_fields[i]
-                if df_row[field] != self.attacker_condition_fields_values_map.get(field,None):
-                    return False
-        return True
-
-
-
-
-

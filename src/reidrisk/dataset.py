@@ -31,6 +31,8 @@ class Dataset:
         self.bigquery_service_account_key_file = bigquery_service_account_key_file
         self.bigquery_dataset = bigquery_dataset
         self.bigquery_table = bigquery_table
+        self.load()
+        self.columns = self.dset.columns
 
     def load(self):
         if self.source == "dataframe":

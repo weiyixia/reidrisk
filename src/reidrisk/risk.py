@@ -4,48 +4,14 @@ author: Weiyi Xia
 from .attacker import Attacker
 from .dataset import Dataset
 
-def set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i):
-    '''
-    a is attacker
-    a_c_f_v_m_i is attacker_condition_fields_mapping_input
-    a_c_f_m is attacker_condition_fields_mapping
-
-    a_i is the attacker input
-    the attacker_input can be dataframe or a list of dataframes
-    if the attacker only uses one resource, then the attacker_input is a dataframe
-    if the attacker uses multiple resources, then the attacker_input is a list of dataframes
-    '''
-    if a_c_f_v_m_i is None or (type(a_c_f_v_m_i) is list and len(a_c_f_v_m_i)==0) or (type(a_c_f_v_m_i) is dict and len(a_c_f_v_m_i)==0):
-        return a_c_f_v_m_i
-    else:
-        if type(a_c_f_v_m_i) is dict:
-            a_c_f_m_in_ds = {}
-            for a_c_k,v in a_c_f_v_m_i.items():
-                k = a_c_f_m_in_ds[a_c_k]
-                m_type = v[0]
-                m_map = v[1]
-                range_sep = None
-                l_bound = 0
-                u_bound = 100
-                if len(v) == 3:
-                    range_sep = v[2]
-                if len(v) == 4:
-                    l_bound = v[3]
-                if len(v) == 5:
-                    u_bound = v[4]
-                if m_type == 'exact':
-                    a_c_f_m_in_ds[k] = None
-                elif m_type == 'use_dict':
-                    a_c_f_m_in_ds[k] = m_map
-                elif m_type == 'use_range':
-                    a_f_values = list(a_i[k].unique())
-                    a_c_f_m_in_ds[k] = get_attacker_condition_field_values_mapping(m_type, range_sep, a_f_values, l_bound, u_bound)
-            return a_c_f_m_in_ds
-        else:
-            return [set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[0],a_c_f_m[0], a_i[0])] + set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[1:],a_c_f_m[1:],a_i[1:])
 def get_attacker_condition_fields_f(a_c_fields, a_c_fields_map, df_fields):
     '''
-    recursive function to get the attacker condition fields
+    recursive function to get the attacker condition fields in the dataset
+    a_c_fields is a list of fields if the attacker only uses one resource
+    a_c_fields is a list of lists of fields if the attacker uses multiple resources
+    a_c_fields_map is a dictionary of fields if the attacker only uses one resource
+    a_c_fields_map is a list of dictionaries of fields if the attacker uses multiple resources
+    df_fields is a list of fields in the dataset
     '''
     if a_c_fields is None or len(a_c_fields)==0:
         return a_c_fields
@@ -67,28 +33,7 @@ def get_attacker_condition_fields_f(a_c_fields, a_c_fields_map, df_fields):
             left = get_attacker_condition_fields_f(curr_a_c_fields,curr_a_c_fields_map,df_fields)
             right = get_attacker_condition_fields_f(a_c_fields[1:],a_c_fields_map[1:],df_fields)
             return [left] + right
-def get_prob_model_condition_key_f(a_c_f_i_d, a_c_f_v_m, df_row):
-    '''
-    recursive function to get the probability model condition key
-    a_c_f_i_d is attacker_condition_fields_in_ds
-    a_c_f_v_m is attacker_condition_fields_values_map
-    df_row is the row of the dataframe
-    '''
-    if a_c_f_i_d is None or len(a_c_f_i_d)==0:
-        return a_c_f_i_d
-    else:
-        curr_filed = a_c_f_i_d[0]
-        if curr_field is str:
-            c_v_in_ds = df_row[curr_field]
-            c_v_map = a_c_f_v_m[curr_field]
-            c_v_in_a_c = c_v_map[c_v_in_ds]
-            return [c_v_in_a_c] + get_prob_model_condition_key_f(a_c_f_i_d[1:],a_c_f_v_m,df_row)
-        else:
-            curr_a_c_f_i_d = curr_field
-            curr_a_c_f_v_m = a_c_f_v_m[0]
-            left = get_prob_model_condition_key_f(curr_a_c_f_i_d,curr_a_c_f_v_m,df_row)
-            right = get_prob_model_condition_key_f(a_c_f_i_d[1:],a_c_f_v_m[1:],df_row)
-            return [left] + right
+
 def get_attacker_condition_field_values_mapping(mapping_type, map_to_range_sep = None, attacker_condition_field_values=None, lower_bound=0, upper_bound = 100):
     if mapping_type == 'use_range':
         if map_to_range_sep is None:
@@ -112,6 +57,79 @@ def get_attacker_condition_field_values_mapping(mapping_type, map_to_range_sep =
                 for value in range(lower,upper):
                     c_dict[value] = item
             return c_dict
+def set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i):
+    '''
+    this is a recursive function to set the attacker condition fields values map
+    if the attacker only uses one resource, then a_c_f_v_m_i is a dictionary
+    each key is a condition field of the dataset, each value is a list,
+    the first value in the list is the type of the mapping,
+    the second value is the dictionary
+    the third value is the separator of the range is the values are mapped to ranges
+    the fourth value is a lower bound of the range if the values are mapped to ranges
+    the fifth value is a upper bound of the range if the values are mapped to range
+    if the attacker uses multiple resources, then a_c_f_v_m_i is a list
+
+
+    a_c_f_m is attacker_condition_fields_mapping
+    if the attacker only uses one resource, then a_c_f_m is a dictionary
+    if the attacker uses multiple resources, then a_c_f_m is a list
+
+    a_i is the attacker input
+    the attacker_input can be dataframe or a list of dataframes
+    if the attacker only uses one resource, then the attacker_input is a dataframe
+    if the attacker uses multiple resources, then the attacker_input is a list of dataframes
+    '''
+    if a_c_f_v_m_i is None or len(a_c_f_v_m_i)==0:
+        return a_c_f_v_m_i
+    else:
+        if type(a_c_f_v_m_i) is dict:
+            '''
+            this means the attacker only uses one resource
+            '''
+            a_c_f_v_m_in_ds = {}
+            for a_c_k,v in a_c_f_v_m_i.items():
+                k = a_c_f_m[a_c_k]
+                m_type = v[0]
+                m_map = v[1]
+                range_sep = None
+                if len(v) == 3:
+                    range_sep = v[2]
+                if len(v) == 4:
+                    l_bound = v[3]
+                if len(v) == 5:
+                    u_bound = v[4]
+                if m_type == 'exact':
+                    a_c_f_v_m_in_ds[k] = None
+                elif m_type == 'use_dict':
+                    a_c_f_v_m_in_ds[k] = m_map
+                elif m_type == 'use_range':
+                    a_f_values = list(a_i[a_c_k].unique())
+                    a_c_f_v_m_in_ds[k] = get_attacker_condition_field_values_mapping(m_type, range_sep, a_f_values, l_bound, u_bound)
+            return a_c_f_v_m_in_ds
+        else:
+            return [set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[0],a_c_f_m[0], a_i[0])] + set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[1:],a_c_f_m[1:],a_i[1:])
+def get_prob_model_condition_key_f(a_c_f_i_d, a_c_f_v_m, df_row):
+    '''
+    recursive function to get the attacker model condition key
+    a_c_f_i_d is attacker_condition_fields_in_ds
+    a_c_f_v_m is attacker_condition_fields_values_map
+    df_row is the row of the dataframe
+    '''
+    if a_c_f_i_d is None or len(a_c_f_i_d)==0:
+        return a_c_f_i_d
+    else:
+        curr_field = a_c_f_i_d[0]
+        if curr_field is str:
+            c_v_in_ds = df_row[curr_field]
+            c_v_map = a_c_f_v_m[curr_field]
+            c_v_in_a_c = c_v_map[c_v_in_ds]
+            return [c_v_in_a_c] + get_prob_model_condition_key_f(a_c_f_i_d[1:],a_c_f_v_m,df_row)
+        else:
+            curr_a_c_f_i_d = curr_field
+            curr_a_c_f_v_m = a_c_f_v_m[0]
+            left = get_prob_model_condition_key_f(curr_a_c_f_i_d,curr_a_c_f_v_m,df_row)
+            right = get_prob_model_condition_key_f(a_c_f_i_d[1:],a_c_f_v_m[1:],df_row)
+            return [left] + right
 class Risk:
     def __init__(
             self,

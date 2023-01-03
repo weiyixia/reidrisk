@@ -34,7 +34,7 @@ def get_attacker_condition_fields_f(a_c_fields, a_c_fields_map, df_fields):
             right = get_attacker_condition_fields_f(a_c_fields[1:],a_c_fields_map[1:],df_fields)
             return [left] + right
 
-def get_attacker_condition_field_values_mapping(mapping_type, map_to_range_sep = None, attacker_condition_field_values=None, lower_bound=0, upper_bound = 100):
+def get_attacker_condition_field_values_mapping(mapping_type, map_to_range_sep = None, attacker_condition_field_values=None, values_in_ds = None):
     if mapping_type == 'use_range':
         if map_to_range_sep is None:
             raise ValueError("map to range separator is not specified")
@@ -42,22 +42,19 @@ def get_attacker_condition_field_values_mapping(mapping_type, map_to_range_sep =
             c_dict = {}
             for item in attacker_condition_field_values:
                 if type(item) is not str:
-                    raise ValueError("attacker condition field values are not ranges")
-                elif map_to_range_sep not in item:
-                    raise ValueError("attacker condition field values are not ranges")
-                elif item[0] == map_to_range_sep:
-                    lower = lower_bound
-                    upper = int(item[1:])
-                elif item[-1] == map_to_range_sep:
-                    lower = int(item[:-1])
-                    upper = upper_bound
+                    raise ValueError("attacker condition field value is not a properly represented range")
+                elif item.count(map_to_range_sep) != 1:
+                    raise ValueError("attacker condition field value is not a properly represented ranges")
                 else:
                     lower = int(item.split(map_to_range_sep)[0])
                     upper = int(item.split(map_to_range_sep)[1])
-                for value in range(lower,upper):
-                    c_dict[value] = item
+                    for value in range(lower, upper):
+                        c_dict[value] = item
+            for value in values_in_ds:
+                if value not in c_dict:
+                    raise ValueError("value in ds are not attacker condition field values")
             return c_dict
-def set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i):
+def set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i, ds):
     '''
     this is a recursive function to set the attacker condition fields values map
     if the attacker only uses one resource, then a_c_f_v_m_i is a dictionary
@@ -94,20 +91,17 @@ def set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i):
                 range_sep = None
                 if len(v) == 3:
                     range_sep = v[2]
-                if len(v) == 4:
-                    l_bound = v[3]
-                if len(v) == 5:
-                    u_bound = v[4]
                 if m_type == 'exact':
                     a_c_f_v_m_in_ds[k] = None
                 elif m_type == 'use_dict':
                     a_c_f_v_m_in_ds[k] = m_map
                 elif m_type == 'use_range':
                     a_f_values = list(a_i[a_c_k].unique())
-                    a_c_f_v_m_in_ds[k] = get_attacker_condition_field_values_mapping(m_type, range_sep, a_f_values, l_bound, u_bound)
+                    f_values_in_ds = ds.dset[k].unique()
+                    a_c_f_v_m_in_ds[k] = get_attacker_condition_field_values_mapping(m_type, range_sep, a_f_values, f_values_in_ds)
             return a_c_f_v_m_in_ds
         else:
-            return [set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[0],a_c_f_m[0], a_i[0])] + set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[1:],a_c_f_m[1:],a_i[1:])
+            return [set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[0],a_c_f_m[0], a_i[0]), ds] + set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[1:],a_c_f_m[1:],a_i[1:], ds)
 def get_prob_model_condition_key_f(a_c_f_i_d, a_c_f_v_m, df_row):
     '''
     recursive function to get the attacker model condition key
@@ -221,7 +215,7 @@ class Risk:
 
 
     def set_attacker_condition_fields_values_map(self):
-        set_attacker_condition_fields_values_map_f(self.attacker_condition_fields_values_mapping_input,self.attacker_condition_fields_map, self.attacker_input)
+        set_attacker_condition_fields_values_map_f(self.attacker_condition_fields_values_mapping_input,self.attacker_condition_fields_map, self.attacker_input, self.dset)
 
 
     def get_attacker_condition_fields(self):

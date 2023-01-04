@@ -34,7 +34,7 @@ def get_attacker_condition_fields_f(a_c_fields, a_c_fields_map, df_fields):
             right = get_attacker_condition_fields_f(a_c_fields[1:],a_c_fields_map[1:],df_fields)
             return [left] + right
 
-def get_attacker_condition_field_values_mapping(mapping_type, map_to_range_sep = None, attacker_condition_field_values=None, values_in_ds = None):
+def get_attacker_condition_field_values_mapping(mapping_type, mapping_dict, map_to_range_sep = None, attacker_condition_field_values=None, values_in_ds = None):
     if mapping_type == 'use_range':
         if map_to_range_sep is None:
             raise ValueError("map to range separator is not specified")
@@ -52,8 +52,23 @@ def get_attacker_condition_field_values_mapping(mapping_type, map_to_range_sep =
                         c_dict[value] = item
             for value in values_in_ds:
                 if value not in c_dict:
-                    raise ValueError("value in ds are not attacker condition field values")
+                    raise ValueError("value" + str(value) + " in ds are not attacker condition field values")
             return c_dict
+    elif mapping_type == 'exact':
+        for item in attacker_condition_field_values:
+            if item not in attacker_condition_field_values:
+                raise ValueError("value in ds are not attacker condition field values")
+        return None
+    elif mapping_type == 'use_dict':
+        for item in values_in_ds:
+            if item not in mapping_dict:
+                raise ValueError("value in ds are not in the mapping dict")
+            else:
+                if mapping_dict[item] not in attacker_condition_field_values:
+                    raise ValueError("value in ds are not mapped to a value in attacker condition field values")
+        return mapping_dict
+
+
 def set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i, ds):
     '''
     this is a recursive function to set the attacker condition fields values map
@@ -87,18 +102,15 @@ def set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i, ds):
             for a_c_k,v in a_c_f_v_m_i.items():
                 k = a_c_f_m[a_c_k]
                 m_type = v[0]
-                m_map = v[1]
+                m_map = None
+                if len(v)>1:
+                    m_map = v[1]
                 range_sep = None
                 if len(v) == 3:
                     range_sep = v[2]
-                if m_type == 'exact':
-                    a_c_f_v_m_in_ds[k] = None
-                elif m_type == 'use_dict':
-                    a_c_f_v_m_in_ds[k] = m_map
-                elif m_type == 'use_range':
-                    a_f_values = list(a_i[a_c_k].unique())
-                    f_values_in_ds = ds.dset[k].unique()
-                    a_c_f_v_m_in_ds[k] = get_attacker_condition_field_values_mapping(m_type, range_sep, a_f_values, f_values_in_ds)
+                a_f_values = list(a_i[a_c_k].unique())
+                f_values_in_ds = ds.dset[k].unique()
+                a_c_f_v_m_in_ds[k] = get_attacker_condition_field_values_mapping(m_type, m_map, range_sep, a_f_values, f_values_in_ds)
             return a_c_f_v_m_in_ds
         else:
             return [set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[0],a_c_f_m[0], a_i[0]), ds] + set_attacker_condition_fields_values_map_f(a_c_f_v_m_i[1:],a_c_f_m[1:],a_i[1:], ds)

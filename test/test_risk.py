@@ -8,22 +8,26 @@ from reidrisk.risk import get_attacker_condition_field_values_mapping
 from reidrisk.risk import set_attacker_condition_fields_values_map_f
 
 
+DATAFILE = 'data/syntheticdata_anonymized_with_age_ethnicity_state_1000rows.csv'
+ATTACKERFILE1 = 'script/attacker1.csv'
+ATTACKERFILE2 = 'script/attacker2.csv'
+
 class TestRisk(unittest.TestCase):
     def test_set_attacker_known_fields_map(self):
-        attacker1_df = pd.read_csv('script/attacker1.csv', header=0, index_col=None, sep=',')
+        attacker1_df = pd.read_csv(ATTACKERFILE1, header=0, index_col=None, sep=',')
         attacker1 = Attacker(attacker1_df)
-        ds = Dataset(source='file', dfile='data/syntheticdata_anonymized.csv')
-        a_known_f_m={'race':'race','gender':'gender'}
-        a_c_f_m = {'race':'race','gender':'gender'}
+        ds = Dataset(source='file', dfile=DATAFILE)
+        a_known_f_m={'RACE':'race','GENDER':'gender','STATE':'state','AGE':'age'}
+        a_c_f_m = {'RACE':'race','GENDER':'gender'}
         r = Risk(ds, attacker1_df, attacker1, a_known_f_m, a_c_f_m)
-        self.assertEqual(r.attacker_known_fields_map,{'race':'race','gender':'gender'})
+        self.assertEqual(r.attacker_known_fields_map,a_known_f_m)
 
     def test_get_attacker_known_fields(self):
-        attacker1_df = pd.read_csv('script/attacker1.csv', header=0, index_col=None, sep=',')
+        attacker1_df = pd.read_csv(ATTACKERFILE1, header=0, index_col=None, sep=',')
         attacker1 = Attacker(attacker1_df)
-        ds = Dataset(source='file', dfile='data/syntheticdata_anonymized.csv')
-        a_known_f_m={'race':'race','gender':'gender'}
-        a_c_f_m = {'race':'race','gender':'gender'}
+        ds = Dataset(source='file', dfile=DATAFILE)
+        a_known_f_m={'RACE':'race','GENDER':'gender','STATE':'state','AGE':'age'}
+        a_c_f_m = {'RACE':'race','GENDER':'gender'}
         r = Risk(ds, attacker1_df, attacker1, a_known_f_m, a_c_f_m)
         probmodel = attacker1.model[('white','male')]
         fields = probmodel.fields
@@ -32,21 +36,20 @@ class TestRisk(unittest.TestCase):
         self.assertEqual(attacker_known_fields, [])
         fields_array_row = probmodel.fields_array[1]
         attacker_known_fields = r.get_attacker_known_fields(fields, fields_array_row)
-        self.assertEqual(attacker_known_fields, ['race','gender'])
+        self.assertEqual(attacker_known_fields, ['state','race','gender','age'])
 
     def test_get_attacker_condition_fields_f_1(self):
-        a_c_fields = ['race','age']
-        a_c_fields_map = {'race':'race_d','age':'age_d'}
-        df_fields = ['race_d','age_d','ethnicity_d']
+        a_c_fields = ['RACE','AGE']
+        a_c_fields_map = {'RACE':'race','AGE':'age'}
+        df_fields = ['race','age','ethnicity']
         a_c_fields_in_d = get_attacker_condition_fields_f(a_c_fields, a_c_fields_map, df_fields)
-        self.assertEqual(a_c_fields_in_d, ['race_d','age_d'])
+        self.assertEqual(a_c_fields_in_d, ['race','age'])
     def test_get_attacker_condition_fields_f_2(self):
-        a_c_fields = [['race','age'],['race','age']]
-        a_c_fields_map = [{'race':'race_d','age':'age_d'}, {'race':'race_d2','age':'age_d'}]
-        df_fields = ['race_d','age_d','ethnicity_d', 'race_d2']
+        a_c_fields = [['RACE','AGE'],['AGE_RANGE']]
+        a_c_fields_map = [{'RACE':'race','AGE':'age'}, {'AGE_RANGE':'age'}]
+        df_fields = ['race','age','ethnicity', 'state']
         a_c_fields_in_d = get_attacker_condition_fields_f(a_c_fields, a_c_fields_map, df_fields)
-        self.assertEqual(a_c_fields_in_d, [['race_d','age_d'],['race_d2','age_d']])
-
+        self.assertEqual(a_c_fields_in_d, [['race','age'],['age']])
 
     def test_get_attacker_condition_field_values_mapping_1(self):
         mapping_type = 'use_range'
@@ -63,8 +66,8 @@ class TestRisk(unittest.TestCase):
         self.assertEqual(a[10], '10-20')
         self.assertEqual(a[19], '10-20')
     def test_set_attacker_condition_fields_values_map_f_1(self):
-        a_i = pd.read_csv('script/attacker1.csv', header=0, index_col=None, sep=',')
-        ds = Dataset(source='file', dfile='data/syntheticdata_anonymized.csv')
+        a_i = pd.read_csv(ATTACKERFILE1, header=0, index_col=None, sep=',')
+        ds = Dataset(source='file', dfile=DATAFILE)
         a_c_f_m = {'RACE':'race','GENDER':'gender'}
         race_dict = {'What Race Ethnicity: Black':'black', 'What Race Ethnicity: White':'white', 'Skip':'other',
  'What Race Ethnicity: Hispanic':'other', 'What Race Ethnicity: Asian':'other', 'Other':'other',
@@ -76,10 +79,10 @@ class TestRisk(unittest.TestCase):
         a = set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i, ds)
         self.assertEqual(a, {'race':race_dict, 'gender':gender_dict})
     def test_set_attacker_condition_fields_values_map_f_2(self):
-        a_i = pd.read_csv('script/attacker2.csv', header=0, index_col=None, sep=',')
-        ds = Dataset(source='file', dfile='data/syntheticdata_anonymized_with_age.csv')
-        a_c_f_m = {'age_range':'age'}
-        a_c_f_v_m_i = {'age_range':['use_range', None, '-']}
+        a_i = pd.read_csv(ATTACKERFILE2, header=0, index_col=None, sep=',')
+        ds = Dataset(source='file', dfile=DATAFILE)
+        a_c_f_m = {'AGE_RANGE':'age'}
+        a_c_f_v_m_i = {'AGE_RANGE':['use_range', None, '-']}
         a = set_attacker_condition_fields_values_map_f(a_c_f_v_m_i, a_c_f_m, a_i, ds)
         self.assertEqual(a['age'][18], '18-24')
         self.assertEqual(a['age'][23], '18-24')

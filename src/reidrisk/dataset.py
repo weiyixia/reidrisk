@@ -20,6 +20,8 @@ class Dataset:
             bigquery_service_account_key_file=None,
             bigquery_dataset=None,
             bigquery_table=None,
+            #missing_set is the set of values that are considered missing, for example, ['NA', 'N/A', 'Skip','prefer not to answer']
+            missing_set = None
     ):
         self.dset = dset
         self.source = source
@@ -33,6 +35,8 @@ class Dataset:
         self.bigquery_table = bigquery_table
         self.load()
         self.columns = self.dset.columns
+        self.selected_columns= self.columns
+        self.missing_set = missing_set
 
     def load(self):
         if self.source == "dataframe":

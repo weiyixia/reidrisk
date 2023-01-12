@@ -84,7 +84,7 @@ class ProbModel:
     def to_string(self):
         return self.__str__()
 
-def add_two_prob_model(model1: ProbModel, model2: ProbModel):
+def add_two_prob_model(model1, model2):
     """
     :param model1: a ProbModel object
     :param model2: a ProbModel object
@@ -146,7 +146,7 @@ def add_two_prob_model(model1: ProbModel, model2: ProbModel):
 
 
 class Attacker:
-    def __init__(self, probability_df, model: dict[Hashable, ProbModel] = None, name='',condition_fields=[]):
+    def __init__(self, probability_df, model = None, name='',condition_fields=[]):
         """
         :param name: the name of the attacker
         :param condition_fields: the list of field names that the probabilities are conditioned on
@@ -256,7 +256,12 @@ class Attacker:
         return l1 + l2
 
 
-def add_two_attacker_model(model1: Attacker, model2: Attacker):
+def add_two_attacker_model(model1, model2):
+    '''
+    :param model1: Attacker
+    :param model2: Attacker
+    :return:
+    '''
     m1 = model1.model
     m2 = model2.model
 

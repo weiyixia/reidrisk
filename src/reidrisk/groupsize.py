@@ -2,7 +2,12 @@ import numpy as np
 import pandas as pd
 
 class MissingPatterns:
-    def __init__(self, patterns: np.ndarray):
+    def __init__(self, patterns):
+        '''
+
+        :param patterns: np.ndarray
+
+        '''
         self.patterns = patterns.astype(int)
         self._check_values_in_patterns() #check if the values in the patterns are 0 or 1
         self.unique_patterns = np.unique(self.patterns, axis=0)
@@ -111,7 +116,11 @@ class MissingPatterns:
 
 
 class DataFrameWithMissingValues:
-    def __init__(self, df: pd.DataFrame, null_values):
+    def __init__(self, df, null_values):
+        '''
+
+        :param df: pd.DataFrame
+        '''
         self.missing_values = null_values
         self.df = df
         self._replace_missing_with_nan()

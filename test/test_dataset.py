@@ -1,7 +1,9 @@
 import unittest
 from reidrisk.dataset import Dataset
 
+DATAFILE = 'data/synthetic_data_small.csv'
 class TestDataset(unittest.TestCase):
+
     def test_bigquery(self):
         ds = Dataset(
             source = 'bigquery',
@@ -12,6 +14,6 @@ class TestDataset(unittest.TestCase):
         self.assertEqual(ds.dset.shape[0], 372380)
 
     def test_file(self):
-        ds = Dataset(source='file', dfile='data/syntheticdata_anonymized.csv')
-        self.assertEqual(ds.dset.shape[0], 372380)
+        ds = Dataset(source='file', dfile=DATAFILE)
+        self.assertEqual(ds.dset.shape[0], 50)
 

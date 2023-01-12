@@ -8,7 +8,7 @@ from reidrisk.risk import get_attacker_condition_field_values_mapping
 from reidrisk.risk import set_attacker_condition_fields_values_map_f
 
 
-DATAFILE = 'data/syntheticdata_anonymized_with_age_ethnicity_state_1000rows.csv'
+DATAFILE = 'data/synthetic_data_small.csv'
 ATTACKERFILE1 = 'script/attacker1.csv'
 ATTACKERFILE2 = 'script/attacker2.csv'
 

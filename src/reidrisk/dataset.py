@@ -42,7 +42,8 @@ class Dataset:
             bigquery_dataset=None,
             bigquery_table=None,
             # missing_set is the set of values that are considered missing, for example, ['NA', 'N/A', 'Skip','prefer not to answer']
-            missing_set=None
+            missing_set=None,
+            year_bin=1
     ):
         self.dset = dset
         self.source = source
@@ -59,6 +60,7 @@ class Dataset:
         self.columns = self.dset.columns
         self.selected_columns = self.columns
         self.missing_set = missing_set
+        self.year_bin = year_bin
         self.dset_numeric = None
         self.null_df = None
         self.categories_dict = {}
@@ -87,11 +89,11 @@ class Dataset:
             raise ValueError("dataset source is not specified")
 
     def combine_multi_select_answers(self, multi_select_field_values_dict):
-        '''
+        """
         this function does these:
         first, combine the columns associated with a multi-select questions, and do this for all the multi-select questions
         second, remove all the columns related to single answers of the multi-select questions
-        '''
+        """
 
         for field, value_list in multi_select_field_values_dict.items():
             col_to_combine = []
@@ -117,26 +119,26 @@ class Dataset:
         if 'death_date' in self.columns:
             self.dset['year_of_death'] = self.dset['death_date'].apply(lambda x: str(x)[:4])
 
-    def generalize_year(self, year_bin):
+    def generalize_year(self):
         """
         this function is for the AoU OMOP data, corresponding to the function in the original code base file: generate_dataset.py
         generate_dataset_numeric_df_for_new_aou(self, file_prefix, null_value_list_file, year_bin, filters_for_all_fields_in_analysis, convert_to_numeric=True):
         """
         if 'YEAR_OF_BIRTH' in self.columns:
             self.dset['YEAR_OF_BIRTH'] = self.dset['YEAR_OF_BIRTH']. \
-                apply(lambda x: generalize_birth_year(x, year_bin))
+                apply(lambda x: generalize_birth_year(x, self.year_bin))
 
         if 'birth_year' in self.columns:
             self.dset['birth_year'] = self.dset['birth_year']. \
-                apply(lambda x: generalize_birth_year(x, year_bin))
+                apply(lambda x: generalize_birth_year(x, self.year_bin))
 
         if 'year_of_birth' in self.columns:
             self.dset['year_of_birth'] = self.dset['year_of_birth']. \
-                apply(lambda x: generalize_birth_year(x, year_bin))
+                apply(lambda x: generalize_birth_year(x, self.year_bin))
 
         if 'year_of_death' in self.columns:
             self.dset['year_of_death'] = self.dset['year_of_death']. \
-                apply(lambda x: generalize_birth_year(x, year_bin))
+                apply(lambda x: generalize_birth_year(x, self.year_bin))
 
     def convert_cate_to_numeric(self):
         """

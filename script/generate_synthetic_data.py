@@ -1,6 +1,8 @@
 import pandas as pd
 import random
 import numpy as np
+
+
 def get_df_for_multi_select(n, all_columns, key_word):
     columns = []
     for field in all_columns:
@@ -16,11 +18,13 @@ def get_df_for_multi_select(n, all_columns, key_word):
         curr_row = []
         for v in columns:
             if v == curr_value:
-                curr_row.append(curr_value[len(key_word+'_'):])
+                curr_row.append(curr_value[len(key_word + '_'):])
             else:
                 curr_row.append('')
         sd_rows.append(curr_row)
     return pd.DataFrame(columns=columns, data=sd_rows)
+
+
 fname = '../data/unique_values_in_each_field_registered_tier.csv'
 unique_values_df = pd.read_csv(fname)
 
@@ -29,15 +33,16 @@ values_dict = dict(grouped)
 sd = pd.DataFrame()
 n = 2000
 
-#get fields that does not contain the following strings: 'Employment_EmploymentStatus', 'Race_WhatRaceEthnicity', 'Gender_GenderIdentity', 'TheBasics_SexualOrientation'
-multi_selection_columns_keywords =[ 'Employment_EmploymentStatus', 'Race_WhatRaceEthnicity', 'Gender_GenderIdentity', 'TheBasics_SexualOrientation']
+# get fields that does not contain the following strings: 'Employment_EmploymentStatus', 'Race_WhatRaceEthnicity', 'Gender_GenderIdentity', 'TheBasics_SexualOrientation'
+multi_selection_columns_keywords = ['Employment_EmploymentStatus', 'Race_WhatRaceEthnicity', 'Gender_GenderIdentity',
+                                    'TheBasics_SexualOrientation']
 
 single_selection_columns = []
 multi_selection_columns = []
 for field in values_dict.keys():
     multi_or_not = False
     for keyword in multi_selection_columns_keywords:
-        #check if keyword is a substring of field
+        # check if keyword is a substring of field
 
         if keyword in field:
             multi_or_not = True
@@ -59,19 +64,6 @@ multi_df_list = []
 for keyword in multi_selection_columns_keywords:
     multi_df_list.append(get_df_for_multi_select(n, multi_selection_columns, keyword))
 
-# race_columns = []
-# for field in multi_selection_columns:
-#     if 'Race_WhatRaceEthnicity' in field and 'Hispanic' not in field:
-#         race_columns.append(field)
-#
-# sd_race = get_df_for_multi_select(n, race_columns, 'Race_WhatRaceEthnicity')
-#
-# gender_columns = []
-# for field in multi_selection_columns:
-#     if 'Gender_GenderIdentity' in field :
-#         gender_columns.append(field)
-# sd_gender = get_df_for_multi_select(n, gender_columns, 'Gender_GenderIdentity')
-#
-#merge all the columns in sd_race to sd
-combined_sd = pd.concat([sd]+multi_df_list, axis=1)
-combined_sd.to_csv('../data/AoU_DM_2000.csv', sep = ',', header=True, index=False)
+# merge all the columns in sd_race to sd
+combined_sd = pd.concat([sd] + multi_df_list, axis=1)
+combined_sd.to_csv('../data/AoU_DM_2000.csv', sep=',', header=True, index=False)

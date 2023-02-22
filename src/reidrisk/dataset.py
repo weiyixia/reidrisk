@@ -38,6 +38,8 @@ class Dataset:
             index_col=False,
             sep=",",
             null_value_list=[],
+            data_model=None,
+            multi_select_field_values=None,
             bigquery_service_account_key_file=None,
             bigquery_dataset=None,
             bigquery_table=None,
@@ -53,6 +55,8 @@ class Dataset:
         self.index_col = index_col
         self.sep = sep
         self.null_value_list = null_value_list
+        self.data_model = data_model
+        self.multi_select_field_values = multi_select_field_values
         self.bigquery_service_account_key_file = bigquery_service_account_key_file
         self.bigquery_dataset = bigquery_dataset
         self.bigquery_table = bigquery_table
@@ -88,14 +92,14 @@ class Dataset:
         else:
             raise ValueError("dataset source is not specified")
 
-    def combine_multi_select_answers(self, multi_select_field_values_dict):
+    def combine_multi_select_answers(self):
         """
         this function does these:
         first, combine the columns associated with a multi-select questions, and do this for all the multi-select questions
         second, remove all the columns related to single answers of the multi-select questions
         """
 
-        for field, value_list in multi_select_field_values_dict.items():
+        for field, value_list in self.multi_select_field_values.items():
             col_to_combine = []
             for name_value in value_list:
                 if name_value not in self.null_value_list:
@@ -105,15 +109,15 @@ class Dataset:
             self.dset[field] = self.dset.apply(lambda x: combine([x[col_name] for col_name in col_to_combine]), axis=1)
 
         col_to_remove = []
-        for field, value_list in multi_select_field_values_dict.items():
+        for field, value_list in self.multi_select_field_values.items():
             for name_value in value_list:
                 col_to_remove.append(str(field) + '_' + str(name_value))
-        print(col_to_remove)
         all_cols = self.dset.columns
-        self.dset[[i for i in all_cols if i not in col_to_remove]]
+        self.dset = self.dset[[i for i in all_cols if i not in col_to_remove]]
+        self.columns = self.dset.columns
 
-    def replace_all_unknown_to_empty_string(self, null_value_list):
-        self.dset.replace({i: '' for i in null_value_list}, inplace=True)
+    def replace_all_unknown_to_empty_string(self):
+        self.dset.replace({i: '' for i in self.null_value_list}, inplace=True)
 
     def create_year_of_death_column(self):
         if 'death_date' in self.columns:
@@ -151,3 +155,17 @@ class Dataset:
             self.categories_dict[field_i] = dict(
                 enumerate(self.dset_numeric[field_i].astype('category').cat.categories))
             self.dset_numeric[field_i] = self.dset_numeric[field_i].astype('category').cat.codes
+
+    def pipeline(self):
+        if self.data_model is None:
+            self.replace_all_unknown_to_empty_string()
+            self.convert_cate_to_numeric()
+        elif self.data_model == 'OMOP':
+            if self.multi_select_field_values is not None:
+                self.combine_multi_select_answers()
+            self.replace_all_unknown_to_empty_string()
+            self.create_year_of_death_column()
+            self.generalize_year()
+            self.convert_cate_to_numeric()
+        return self.dset_numeric, self.null_df, self.categories_dict
+
